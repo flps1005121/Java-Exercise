@@ -1,36 +1,43 @@
+import java.time.LocalDate;
+import java.time.Period;
 
-import java.io.Serializable;
-
-public class Task implements Serializable {
+public class Task {
     private String name;
-    private int importance;
     private String category;
-    private boolean completed;  // 新增字段: 任务是否已完成
+    private String dueDate;
+    private int urgencyLevel; // 0: Low, 1: Medium, 2: High
 
-    public Task(String name, int importance, String category) {
+    public Task(String name, String category, String dueDate, int urgencyLevel) {
         this.name = name;
-        this.importance = importance;
         this.category = category;
-        this.completed = false; // 初始状态为未完成
+        this.dueDate = dueDate;
+        this.urgencyLevel = urgencyLevel;
     }
 
     public String getName() {
         return name;
     }
 
-    public int getImportance() {
-        return importance;
-    }
-
     public String getCategory() {
         return category;
     }
 
-    public boolean isCompleted() {
-        return completed;
+    public String getDueDate() {
+        return dueDate;
     }
 
-    public void setCompleted(boolean completed) {
-        this.completed = completed;
+    public int getUrgencyLevel() {
+        return urgencyLevel;
+    }
+
+    public int getDaysUntilDue() {
+        // Assuming dueDate is in format "YYYY-MM-DD"
+        LocalDate due = LocalDate.parse(dueDate);
+        return Period.between(LocalDate.now(), due).getDays();
+    }
+
+    public boolean shouldNotify() {
+        // Example notification logic
+        return getDaysUntilDue() <= 1; // Notify if due in 1 day or already overdue
     }
 }
