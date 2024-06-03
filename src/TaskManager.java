@@ -3,7 +3,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class TaskManager {
-    private static final String FILE_PATH = "tasks.txt"; // 这里定义保存任务的文件路径
+    private static final String FILE_PATH = "tasks.txt"; // 保存文件的路徑
 
     public static List<Task> loadTasks() {
         List<Task> tasks = new ArrayList<>();
@@ -16,6 +16,7 @@ public class TaskManager {
                     String category = parts[1];
                     String dueDate = parts[2];
                     int urgencyLevel = Integer.parseInt(parts[3]); // 将紧急程度转换为整数
+
                     tasks.add(new Task(name, category, dueDate, urgencyLevel));
                 }
             }

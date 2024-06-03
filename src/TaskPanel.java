@@ -1,10 +1,8 @@
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
+import java.awt.event.*;
 import java.time.LocalDate;
-import java.time.Period;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Timer;
@@ -32,9 +30,16 @@ public class TaskPanel extends JPanel {
         taskList.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                if (e.getClickCount() == 2) {
+                if (SwingUtilities.isLeftMouseButton(e) && e.getClickCount() == 2) {
                     int selectedIndex = taskList.locationToIndex(e.getPoint());
                     if (selectedIndex >= 0) {
+                        Task task = tasks.get(selectedIndex);
+                        editTaskDialog(task);
+                    }
+                } else if (SwingUtilities.isRightMouseButton(e)) {
+                    int selectedIndex = taskList.locationToIndex(e.getPoint());
+                    if (selectedIndex >= 0) {
+                        taskList.setSelectedIndex(selectedIndex);
                         Task task = tasks.get(selectedIndex);
                         completeTask(task);
                     }
@@ -54,25 +59,25 @@ public class TaskPanel extends JPanel {
         buttonPanel.setBackground(new Color(245, 245, 245));
         buttonPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
 
-        JButton addTaskButton = new JButton("新增任务");
+        JButton addTaskButton = new JButton("新增任務");
         styleButton(addTaskButton);
         addTaskButton.addActionListener(e -> addTaskDialog());
         buttonPanel.add(addTaskButton);
 
-        JButton saveTaskButton = new JButton("保存任务");
+        JButton saveTaskButton = new JButton("保存任務");
         styleButton(saveTaskButton);
         saveTaskButton.addActionListener(e -> saveTasks());
         buttonPanel.add(saveTaskButton);
 
-        JButton addCategoryButton = new JButton("新增类别");
+        JButton addCategoryButton = new JButton("新增類別");
         styleButton(addCategoryButton);
         addCategoryButton.addActionListener(e -> addCategoryDialog());
         buttonPanel.add(addCategoryButton);
 
-        JButton sortByNameButton = new JButton("按名称排序");
-        styleButton(sortByNameButton);
-        sortByNameButton.addActionListener(e -> sortTasksByName());
-        buttonPanel.add(sortByNameButton);
+        JButton sortTasksUrgencyLevel = new JButton("按緊急程度排序");
+        styleButton(sortTasksUrgencyLevel);
+        sortTasksUrgencyLevel.addActionListener(e -> sortTasksUrgencyLevel());
+        buttonPanel.add(sortTasksUrgencyLevel);
 
         JButton sortByDateButton = new JButton("按到期日排序");
         styleButton(sortByDateButton);
@@ -85,12 +90,24 @@ public class TaskPanel extends JPanel {
     private void loadTasksToList() {
         listModel.clear();
         for (Task task : tasks) {
+            boolean isOverdue = isTaskOverdue(task); // 检查任务是否过期
+            task.setOverdue(isOverdue);
+            if(isOverdue) {
+                task.setCategory("已過期"); // 将任务的分类设置为 "已過期"
+            }
             listModel.addElement(task);
         }
     }
 
+
+    private boolean isTaskOverdue(Task task) {
+        LocalDate dueDate = LocalDate.parse(task.getDueDate());
+        return dueDate.isBefore(LocalDate.now());
+    }
+
+
     private void completeTask(Task task) {
-        int response = JOptionPane.showConfirmDialog(this, "确定完成任务: " + task.getName() + "？", "完成任务", JOptionPane.YES_NO_OPTION);
+        int response = JOptionPane.showConfirmDialog(this, "確定完成任務: " + task.getName() + "？", "完成任务", JOptionPane.YES_NO_OPTION);
         if (response == JOptionPane.YES_OPTION) {
             tasks.remove(task);
             listModel.removeElement(task);
@@ -100,26 +117,28 @@ public class TaskPanel extends JPanel {
 
     private void addTaskDialog() {
         JTextField taskNameField = new JTextField(20);
-        JTextField categoryField = new JTextField(20);
         JTextField dueDateField = new JTextField(20);
         String[] urgencies = {"低", "中", "高"};
         JComboBox<String> urgencyComboBox = new JComboBox<>(urgencies);
 
+        String[] categories = categoryManager.getCategories().toArray(new String[0]);
+        JComboBox<String> categoryComboBox = new JComboBox<>(categories);
+
         JPanel panel = new JPanel(new GridLayout(0, 1));
-        panel.add(new JLabel("任务名称:"));
+        panel.add(new JLabel("任務名稱:"));
         panel.add(taskNameField);
-        panel.add(new JLabel("类别:"));
-        panel.add(categoryField);
+        panel.add(new JLabel("類別:"));
+        panel.add(categoryComboBox);
         panel.add(new JLabel("到期日 (YYYY-MM-DD):"));
         panel.add(dueDateField);
-        panel.add(new JLabel("紧急程度:"));
+        panel.add(new JLabel("緊急程度:"));
         panel.add(urgencyComboBox);
 
-        int result = JOptionPane.showConfirmDialog(null, panel, "新增任务", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        int result = JOptionPane.showConfirmDialog(null, panel, "新增任務", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 
         if (result == JOptionPane.OK_OPTION) {
             String name = taskNameField.getText();
-            String category = categoryField.getText();
+            String category = (String) categoryComboBox.getSelectedItem();
             String dueDate = dueDateField.getText();
             int urgencyLevel = urgencyComboBox.getSelectedIndex();
 
@@ -130,22 +149,64 @@ public class TaskPanel extends JPanel {
         }
     }
 
+    private void editTaskDialog(Task task) {
+        JTextField taskNameField = new JTextField(task.getName(), 20);
+        JTextField dueDateField = new JTextField(task.getDueDate(), 20);
+        String[] urgencies = {"低", "中", "高"};
+        JComboBox<String> urgencyComboBox = new JComboBox<>(urgencies);
+        urgencyComboBox.setSelectedIndex(task.getUrgencyLevel());
+
+        String[] categories = categoryManager.getCategories().toArray(new String[0]);
+        JComboBox<String> categoryComboBox = new JComboBox<>(categories);
+        categoryComboBox.setSelectedItem(task.getCategory());
+
+        JPanel panel = new JPanel(new GridLayout(0, 1));
+        panel.add(new JLabel("任務名稱:"));
+        panel.add(taskNameField);
+        panel.add(new JLabel("類別:"));
+        panel.add(categoryComboBox);
+        panel.add(new JLabel("到期日 (YYYY-MM-DD):"));
+        panel.add(dueDateField);
+        panel.add(new JLabel("緊急程度:"));
+        panel.add(urgencyComboBox);
+
+        Object[] options = {"儲存修改", "刪除任務", "取消"};
+        int result = JOptionPane.showOptionDialog(null, panel, "編輯任務", JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE, null, options, options[0]);
+
+        if (result == JOptionPane.YES_OPTION) {
+            task.setName(taskNameField.getText());
+            task.setCategory((String) categoryComboBox.getSelectedItem());
+            task.setDueDate(dueDateField.getText());
+            task.setUrgencyLevel(urgencyComboBox.getSelectedIndex());
+
+            loadTasksToList();
+            saveTasks();
+        } else if (result == JOptionPane.NO_OPTION) {
+            int confirm = JOptionPane.showConfirmDialog(this, "確定刪除任務: " + task.getName() + "？", "刪除任務", JOptionPane.YES_NO_OPTION);
+            if (confirm == JOptionPane.YES_OPTION) {
+                tasks.remove(task);
+                listModel.removeElement(task);
+                saveTasks();
+            }
+        }
+    }
+
     private void addCategoryDialog() {
         JTextField categoryNameField = new JTextField(20);
 
         JPanel panel = new JPanel(new GridLayout(0, 1));
-        panel.add(new JLabel("类别名称:"));
+        panel.add(new JLabel("類別名稱:"));
         panel.add(categoryNameField);
 
-        int result = JOptionPane.showConfirmDialog(null, panel, "新增类别", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        int result = JOptionPane.showConfirmDialog(null, panel, "新增類別", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 
         if (result == JOptionPane.OK_OPTION) {
             String categoryName = categoryNameField.getText();
             if (!categoryManager.hasCategory(categoryName)) {
                 categoryManager.addCategory(categoryName);
-                JOptionPane.showMessageDialog(this, "类别添加成功: " + categoryName);
+                JOptionPane.showMessageDialog(this, "類別添加成功: " + categoryName);
             } else {
-                JOptionPane.showMessageDialog(this, "类别已存在: " + categoryName);
+                JOptionPane.showMessageDialog(this, "類別已存在: " + categoryName);
             }
         }
     }
@@ -161,8 +222,8 @@ public class TaskPanel extends JPanel {
         button.setPreferredSize(new Dimension(120, 30));
     }
 
-    private void sortTasksByName() {
-        tasks.sort(Comparator.comparing(Task::getName));
+    private void sortTasksUrgencyLevel() {
+        tasks.sort(Comparator.comparing(Task::getUrgencyLevel).reversed());
         loadTasksToList();
     }
 
@@ -178,7 +239,7 @@ public class TaskPanel extends JPanel {
             public void run() {
                 for (Task task : tasks) {
                     if (task.shouldNotify()) {
-                        NotificationManager.showNotification("提醒", "任务 " + task.getName() + " 还剩 " + task.getDaysUntilDue() + " 天到期！");
+                        NotificationManager.showNotification("提醒", "任務 " + task.getName() + " 還剩 " + task.getDaysUntilDue() + " 天到期！");
                     }
                 }
             }
@@ -204,8 +265,18 @@ public class TaskPanel extends JPanel {
         @Override
         public Component getListCellRendererComponent(JList<? extends Task> list, Task task, int index, boolean isSelected, boolean cellHasFocus) {
             nameLabel.setText(task.getName());
-            categoryLabel.setText("分类: " + task.getCategory());
-            dueDateLabel.setText("剩余天数: " + task.getDaysUntilDue());
+            categoryLabel.setText("分類: " + task.getCategory());
+            dueDateLabel.setText("剩餘天數: " + task.getDaysUntilDue());
+
+            if (task.isOverdue()) {
+                nameLabel.setForeground(Color.RED);
+                categoryLabel.setForeground(Color.RED);
+                dueDateLabel.setForeground(Color.RED);
+            } else {
+                nameLabel.setForeground(list.getForeground());
+                categoryLabel.setForeground(list.getForeground());
+                dueDateLabel.setForeground(list.getForeground());
+            }
 
             // 添加紧急程度圆点
             JPanel urgencyPanel = new JPanel();
