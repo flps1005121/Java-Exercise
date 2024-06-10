@@ -3,7 +3,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class TaskManager {
-    private static final String FILE_PATH = "tasks.txt"; // 保存文件的路徑
+    private static final String FILE_PATH = "tasks.csv"; // 保存文件的路徑
 
     public static List<Task> loadTasks() {
         List<Task> tasks = new ArrayList<>();
@@ -25,7 +25,6 @@ public class TaskManager {
         }
         return tasks;
     }
-
 
     public static void saveTasks(List<Task> tasks) {
         try (PrintWriter writer = new PrintWriter(new FileWriter(FILE_PATH))) {

@@ -1,6 +1,4 @@
 import javax.swing.*;
-import java.awt.*;
-import java.util.ArrayList;
 import java.util.List;
 
 public class Main {
@@ -11,6 +9,8 @@ public class Main {
             frame.setSize(700, 500);
 
             CategoryManager categoryManager = new CategoryManager();
+            categoryManager.loadCategoriesFromTasks(); // Load categories from tasks.csv file
+
             List<Task> tasks = TaskManager.loadTasks();
 
             TaskPanel taskPanel = new TaskPanel(tasks, categoryManager);

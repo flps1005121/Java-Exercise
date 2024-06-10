@@ -64,22 +64,17 @@ public class TaskPanel extends JPanel {
         addTaskButton.addActionListener(e -> addTaskDialog());
         buttonPanel.add(addTaskButton);
 
-        JButton saveTaskButton = new JButton("保存任務");
-        styleButton(saveTaskButton);
-        saveTaskButton.addActionListener(e -> saveTasks());
-        buttonPanel.add(saveTaskButton);
-
         JButton addCategoryButton = new JButton("新增類別");
         styleButton(addCategoryButton);
         addCategoryButton.addActionListener(e -> addCategoryDialog());
         buttonPanel.add(addCategoryButton);
 
-        JButton sortTasksUrgencyLevel = new JButton("按緊急程度排序");
+        JButton sortTasksUrgencyLevel = new JButton("緊急程度↑");
         styleButton(sortTasksUrgencyLevel);
         sortTasksUrgencyLevel.addActionListener(e -> sortTasksUrgencyLevel());
         buttonPanel.add(sortTasksUrgencyLevel);
 
-        JButton sortByDateButton = new JButton("按到期日排序");
+        JButton sortByDateButton = new JButton("到期日↑");
         styleButton(sortByDateButton);
         sortByDateButton.addActionListener(e -> sortTasksByDueDate());
         buttonPanel.add(sortByDateButton);
@@ -90,21 +85,17 @@ public class TaskPanel extends JPanel {
     private void loadTasksToList() {
         listModel.clear();
         for (Task task : tasks) {
-            boolean isOverdue = isTaskOverdue(task); // 检查任务是否过期
-            task.setOverdue(isOverdue);
-            if(isOverdue) {
-                task.setCategory("已過期"); // 将任务的分类设置为 "已過期"
+            if(isTaskOverdue(task)) {// 检查任务是否过期
+                task.setOverdue();
             }
             listModel.addElement(task);
         }
     }
 
-
     private boolean isTaskOverdue(Task task) {
         LocalDate dueDate = LocalDate.parse(task.getDueDate());
         return dueDate.isBefore(LocalDate.now());
     }
-
 
     private void completeTask(Task task) {
         int response = JOptionPane.showConfirmDialog(this, "確定完成任務: " + task.getName() + "？", "完成任务", JOptionPane.YES_NO_OPTION);
@@ -143,6 +134,7 @@ public class TaskPanel extends JPanel {
             int urgencyLevel = urgencyComboBox.getSelectedIndex();
 
             Task newTask = new Task(name, category, dueDate, urgencyLevel);
+            if(LocalDate.parse(dueDate).isBefore(LocalDate.now())) {newTask.setOverdue();}
             tasks.add(newTask);
             listModel.addElement(newTask);
             saveTasks();
@@ -177,6 +169,7 @@ public class TaskPanel extends JPanel {
             task.setName(taskNameField.getText());
             task.setCategory((String) categoryComboBox.getSelectedItem());
             task.setDueDate(dueDateField.getText());
+            if(LocalDate.parse(dueDateField.getText()).isBefore(LocalDate.now())) {task.setOverdue();}
             task.setUrgencyLevel(urgencyComboBox.getSelectedIndex());
 
             loadTasksToList();
@@ -225,11 +218,13 @@ public class TaskPanel extends JPanel {
     private void sortTasksUrgencyLevel() {
         tasks.sort(Comparator.comparing(Task::getUrgencyLevel).reversed());
         loadTasksToList();
+        saveTasks();
     }
 
     private void sortTasksByDueDate() {
         tasks.sort(Comparator.comparing(Task::getDueDate));
         loadTasksToList();
+        saveTasks();
     }
 
     private void startReminderTimer() {

@@ -1,6 +1,3 @@
-import java.time.LocalDate;
-import java.time.Period;
-
 public class Task {
     private String name;
     private String category;
@@ -32,27 +29,29 @@ public class Task {
         return urgencyLevel;
     }
 
+    public void setOverdue() {
+        this.isOverdue = true;
+    }
+
     public boolean isOverdue() {
         return isOverdue;
     }
 
-    public void setOverdue(boolean isOverdue) {
-        this.isOverdue = isOverdue;
-    }
-
-    public int getDaysUntilDue() {
+    public String getDaysUntilDue() {
         try {
+            if(isOverdue)
+                return "已過期";
             java.time.LocalDate due = java.time.LocalDate.parse(dueDate);
             java.time.LocalDate now = java.time.LocalDate.now();
-            return (int) java.time.temporal.ChronoUnit.DAYS.between(now, due);
+            return String.valueOf(java.time.temporal.ChronoUnit.DAYS.between(now, due));
         } catch (Exception e) {
             e.printStackTrace();
-            return Integer.MAX_VALUE; // 无效日期时返回一个很大的数
+            return "ERROR";
         }
     }
 
     public boolean shouldNotify() {
-        return getDaysUntilDue() <= 1;
+        return getDaysUntilDue().equals("1");
     }
 
     public void setName(String text) {
@@ -75,6 +74,5 @@ public class Task {
     public String toString() {
         return name + " - " + category + " - 到期日: " + dueDate + " - 緊急程度: " + urgencyLevel;
     }
-
 
 }
