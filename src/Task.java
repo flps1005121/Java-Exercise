@@ -54,6 +54,7 @@ public class Task {
     public void setCompleted() {
         this.completed = true;
         this.urgencyLevel = -1;
+        this.dueDate = "9999-12-31";
     }
 
     public boolean isCompleted() {
