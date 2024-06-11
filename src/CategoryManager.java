@@ -21,7 +21,7 @@ public class CategoryManager {
             String line;
             while ((line = reader.readLine()) != null) {
                 String[] parts = line.split(",");
-                if (parts.length == 4) {
+                if (parts.length == 6) {
                     String category = parts[1].trim(); // Assuming the second column is the category
                     categorySet.add(category);
                 }

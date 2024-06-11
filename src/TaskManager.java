@@ -11,13 +11,15 @@ public class TaskManager {
             String line;
             while ((line = reader.readLine()) != null) {
                 String[] parts = line.split(",");
-                if (parts.length == 4) { // 确保有4个部分
+                if (parts.length == 6) { // 确保有4个部分
                     String name = parts[0];
                     String category = parts[1];
                     String dueDate = parts[2];
                     int urgencyLevel = Integer.parseInt(parts[3]); // 将紧急程度转换为整数
+                    boolean overdue = Boolean.parseBoolean(parts[4]);
+                    boolean completed = Boolean.parseBoolean(parts[5]);
 
-                    tasks.add(new Task(name, category, dueDate, urgencyLevel));
+                    tasks.add(new Task(name, category, dueDate, urgencyLevel, overdue, completed));
                 }
             }
         } catch (IOException e) {
@@ -29,7 +31,7 @@ public class TaskManager {
     public static void saveTasks(List<Task> tasks) {
         try (PrintWriter writer = new PrintWriter(new FileWriter(FILE_PATH))) {
             for (Task task : tasks) {
-                writer.println(task.getName() + "," + task.getCategory() + "," + task.getDueDate() + "," + task.getUrgencyLevel());
+                writer.println(task.getName() + "," + task.getCategory() + "," + task.getDueDate() + "," + task.getUrgencyLevel() + "," + task.isOverdue() + "," + task.isCompleted());
             }
         } catch (IOException e) {
             e.printStackTrace();

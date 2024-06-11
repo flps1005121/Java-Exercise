@@ -41,7 +41,7 @@ public class TaskPanel extends JPanel {
                     if (selectedIndex >= 0) {
                         taskList.setSelectedIndex(selectedIndex);
                         Task task = tasks.get(selectedIndex);
-                        completeTask(task);
+                        if (!task.isCompleted()) {completeTask(task);}
                     }
                 }
             }
@@ -85,23 +85,14 @@ public class TaskPanel extends JPanel {
     private void loadTasksToList() {
         listModel.clear();
         for (Task task : tasks) {
-            if(isTaskOverdue(task)) {// 检查任务是否过期
-                task.setOverdue();
-            }
             listModel.addElement(task);
         }
     }
 
-    private boolean isTaskOverdue(Task task) {
-        LocalDate dueDate = LocalDate.parse(task.getDueDate());
-        return dueDate.isBefore(LocalDate.now());
-    }
-
     private void completeTask(Task task) {
-        int response = JOptionPane.showConfirmDialog(this, "確定完成任務: " + task.getName() + "？", "完成任务", JOptionPane.YES_NO_OPTION);
+        int response = JOptionPane.showConfirmDialog(this, "確定完成任務: " + task.getName() + "？", "完成任務", JOptionPane.YES_NO_OPTION);
         if (response == JOptionPane.YES_OPTION) {
-            tasks.remove(task);
-            listModel.removeElement(task);
+            task.setCompleted();
             saveTasks();
         }
     }
@@ -134,7 +125,7 @@ public class TaskPanel extends JPanel {
             int urgencyLevel = urgencyComboBox.getSelectedIndex();
 
             Task newTask = new Task(name, category, dueDate, urgencyLevel);
-            if(LocalDate.parse(dueDate).isBefore(LocalDate.now())) {newTask.setOverdue();}
+            newTask.checkOverdue();
             tasks.add(newTask);
             listModel.addElement(newTask);
             saveTasks();
@@ -169,8 +160,8 @@ public class TaskPanel extends JPanel {
             task.setName(taskNameField.getText());
             task.setCategory((String) categoryComboBox.getSelectedItem());
             task.setDueDate(dueDateField.getText());
-            if(LocalDate.parse(dueDateField.getText()).isBefore(LocalDate.now())) {task.setOverdue();}
             task.setUrgencyLevel(urgencyComboBox.getSelectedIndex());
+            task.checkOverdue();
 
             loadTasksToList();
             saveTasks();
@@ -305,6 +296,8 @@ public class TaskPanel extends JPanel {
                     return Color.ORANGE; // 中等紧急程度
                 case 2:
                     return Color.RED; // 高紧急程度
+                case -1:
+                    return Color.BLUE;
                 default:
                     return Color.GRAY; // 未定义的紧急程度
             }

@@ -1,16 +1,29 @@
+import java.time.LocalDate;
+
 public class Task {
     private String name;
     private String category;
     private String dueDate;
     private int urgencyLevel; // 0: Low, 1: Medium, 2: High
-    private boolean isOverdue;
+    private boolean overdue;
+    private boolean completed;
+
+    public Task(String name, String category, String dueDate, int urgencyLevel, boolean overdue, boolean completed) {
+        this.name = name;
+        this.category = category;
+        this.dueDate = dueDate;
+        this.urgencyLevel = urgencyLevel;
+        this.overdue = overdue;
+        this.completed = completed;
+    }
 
     public Task(String name, String category, String dueDate, int urgencyLevel) {
         this.name = name;
         this.category = category;
         this.dueDate = dueDate;
         this.urgencyLevel = urgencyLevel;
-        this.isOverdue = false;
+        this.overdue = false;
+        this.completed = false;
     }
 
     public String getName() {
@@ -29,17 +42,29 @@ public class Task {
         return urgencyLevel;
     }
 
-    public void setOverdue() {
-        this.isOverdue = true;
+    public boolean isOverdue() {
+        return overdue;
     }
 
-    public boolean isOverdue() {
-        return isOverdue;
+    public void checkOverdue() {
+        LocalDate localDueDate = LocalDate.parse(dueDate);
+        this.overdue = localDueDate.isBefore(LocalDate.now());
+    }
+
+    public void setCompleted() {
+        this.completed = true;
+        this.urgencyLevel = -1;
+    }
+
+    public boolean isCompleted() {
+        return completed;
     }
 
     public String getDaysUntilDue() {
         try {
-            if(isOverdue)
+            if(isCompleted())
+                return "已完成";
+            else if(isOverdue())
                 return "已過期";
             java.time.LocalDate due = java.time.LocalDate.parse(dueDate);
             java.time.LocalDate now = java.time.LocalDate.now();
