@@ -3,10 +3,17 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.*;
 import java.time.LocalDate;
-import java.util.Comparator;
+import java.util.*;
 import java.util.List;
 import java.util.Timer;
-import java.util.TimerTask;
+
+import org.jdatepicker.impl.JDatePanelImpl;
+import org.jdatepicker.impl.JDatePickerImpl;
+import org.jdatepicker.impl.UtilDateModel;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Properties;
 
 public class TaskPanel extends JPanel {
     private List<Task> tasks;
@@ -99,7 +106,16 @@ public class TaskPanel extends JPanel {
 
     private void addTaskDialog() {
         JTextField taskNameField = new JTextField(20);
-        JTextField dueDateField = new JTextField(20);
+
+        // Create a date picker
+        UtilDateModel model = new UtilDateModel();
+        Properties p = new Properties();
+        p.put("text.today", "Today");
+        p.put("text.month", "Month");
+        p.put("text.year", "Year");
+        JDatePanelImpl datePanel = new JDatePanelImpl(model, p);
+        JDatePickerImpl datePicker = new JDatePickerImpl(datePanel, new DateLabelFormatter());
+
         String[] urgencies = {"低", "中", "高"};
         JComboBox<String> urgencyComboBox = new JComboBox<>(urgencies);
 
@@ -111,8 +127,8 @@ public class TaskPanel extends JPanel {
         panel.add(taskNameField);
         panel.add(new JLabel("類別:"));
         panel.add(categoryComboBox);
-        panel.add(new JLabel("到期日 (YYYY-MM-DD):"));
-        panel.add(dueDateField);
+        panel.add(new JLabel("到期日:"));
+        panel.add(datePicker);
         panel.add(new JLabel("緊急程度:"));
         panel.add(urgencyComboBox);
 
@@ -121,7 +137,10 @@ public class TaskPanel extends JPanel {
         if (result == JOptionPane.OK_OPTION) {
             String name = taskNameField.getText();
             String category = (String) categoryComboBox.getSelectedItem();
-            String dueDate = dueDateField.getText();
+            int year = model.getYear();
+            int month = model.getMonth() + 1;
+            int day = model.getDay();
+            String dueDate = String.format("%04d-%02d-%02d", year, month, day);
             int urgencyLevel = urgencyComboBox.getSelectedIndex();
 
             Task newTask = new Task(name, category, dueDate, urgencyLevel);
@@ -132,9 +151,22 @@ public class TaskPanel extends JPanel {
         }
     }
 
+
     private void editTaskDialog(Task task) {
         JTextField taskNameField = new JTextField(task.getName(), 20);
-        JTextField dueDateField = new JTextField(task.getDueDate(), 20);
+
+        // Create a date picker with the existing due date
+        UtilDateModel model = new UtilDateModel();
+        LocalDate dueDate = LocalDate.parse(task.getDueDate());
+        model.setDate(dueDate.getYear(), dueDate.getMonthValue() - 1, dueDate.getDayOfMonth());
+        model.setSelected(true);
+        Properties p = new Properties();
+        p.put("text.today", "Today");
+        p.put("text.month", "Month");
+        p.put("text.year", "Year");
+        JDatePanelImpl datePanel = new JDatePanelImpl(model, p);
+        JDatePickerImpl datePicker = new JDatePickerImpl(datePanel, new DateLabelFormatter());
+
         String[] urgencies = {"低", "中", "高"};
         JComboBox<String> urgencyComboBox = new JComboBox<>(urgencies);
         urgencyComboBox.setSelectedIndex(task.getUrgencyLevel());
@@ -148,8 +180,8 @@ public class TaskPanel extends JPanel {
         panel.add(taskNameField);
         panel.add(new JLabel("類別:"));
         panel.add(categoryComboBox);
-        panel.add(new JLabel("到期日 (YYYY-MM-DD):"));
-        panel.add(dueDateField);
+        panel.add(new JLabel("到期日:"));
+        panel.add(datePicker);
         panel.add(new JLabel("緊急程度:"));
         panel.add(urgencyComboBox);
 
@@ -159,7 +191,11 @@ public class TaskPanel extends JPanel {
         if (result == JOptionPane.YES_OPTION) {
             task.setName(taskNameField.getText());
             task.setCategory((String) categoryComboBox.getSelectedItem());
-            task.setDueDate(dueDateField.getText());
+            int year = model.getYear();
+            int month = model.getMonth() + 1;
+            int day = model.getDay();
+            String newDueDate = String.format("%04d-%02d-%02d", year, month, day);
+            task.setDueDate(newDueDate);
             task.setUrgencyLevel(urgencyComboBox.getSelectedIndex());
             task.checkOverdue();
 
@@ -174,6 +210,8 @@ public class TaskPanel extends JPanel {
             }
         }
     }
+
+
 
     private void addCategoryDialog() {
         JTextField categoryNameField = new JTextField(20);
@@ -289,18 +327,34 @@ public class TaskPanel extends JPanel {
         }
 
         private Color getUrgencyColor(int urgencyLevel) {
-            switch (urgencyLevel) {
-                case 0:
-                    return Color.GREEN; // 低紧急程度
-                case 1:
-                    return Color.ORANGE; // 中等紧急程度
-                case 2:
-                    return Color.RED; // 高紧急程度
-                case -1:
-                    return Color.BLUE;
-                default:
-                    return Color.GRAY; // 未定义的紧急程度
-            }
+            return switch (urgencyLevel) {
+                case 0 -> Color.GREEN; // 低紧急程度
+                case 1 -> Color.ORANGE; // 中等紧急程度
+                case 2 -> Color.RED; // 高紧急程度
+                case -1 -> Color.BLUE;
+                default -> Color.GRAY; // 未定义的紧急程度
+            };
         }
     }
+
+    // Helper class for date formatting
+    public class DateLabelFormatter extends JFormattedTextField.AbstractFormatter {
+        private String datePattern = "yyyy-MM-dd";
+        private SimpleDateFormat dateFormatter = new SimpleDateFormat(datePattern);
+
+        @Override
+        public Object stringToValue(String text) throws ParseException {
+            return dateFormatter.parseObject(text);
+        }
+
+        @Override
+        public String valueToString(Object value) throws ParseException {
+            if (value != null) {
+                Calendar cal = (Calendar) value;
+                return dateFormatter.format(cal.getTime());
+            }
+            return "";
+        }
+    }
+
 }
